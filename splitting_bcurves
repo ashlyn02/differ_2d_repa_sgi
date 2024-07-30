@@ -46,14 +46,20 @@ def split_bezier(control_points, tValues):
 
     return segments
 
-controlPoints = torch.tensor([
-    [0, 0],   # P0
-    [1, 2],   # P1
-    [3, 3],   # P2
-    [4, 0]    # P3
+controlPoints = torch.tensor([[120.0,  30.0], # base
+                              [150.0,  60.0], # control point
+                              [ 90.0, 198.0], # control point
+                              [ 60.0, 218.0]    
+
 ])
 # Define the parameter values at which to split the curve
-tValues = [0.3, 0.7]
+tValues = [0.1, 0.3, 0.5, 0.7, 0.9]
 
-    
-print (split_bezier(controlPoints, tValues))
+
+segments = (split_bezier(controlPoints, tValues))
+
+i=0
+for segment in segments:
+    i+=1
+    print (f"Segment {i}:")
+    print(torch.tensor(segment))
