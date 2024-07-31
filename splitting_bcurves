@@ -53,13 +53,14 @@ controlPoints = torch.tensor([[120.0,  30.0], # base
 
 ])
 # Define the parameter values at which to split the curve
-tValues = [0.1, 0.3, 0.5, 0.7, 0.9]
+tValues = [0.1,0.3, 0.5, 0.7, 0.9]
 
 
 segments = (split_bezier(controlPoints, tValues))
 
 i=0
+
 for segment in segments:
     i+=1
     print (f"Segment {i}:")
-    print(torch.tensor(segment))
+    print (segment)
