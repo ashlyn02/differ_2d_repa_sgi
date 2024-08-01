@@ -19,7 +19,7 @@ path = pydiffvg.Path(num_control_points = num_control_points,
 shapes = [path]
 path_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
                                  fill_color = torch.tensor([0.0, 0.0, 0.0, 0.0]),
-                                 stroke_color = torch.tensor([0.6, 0.3, 0.6, 0.8]))
+                                 stroke_color = torch.tensor([0.7, 0.2, 0.7, 0.8]))
 shape_groups = [path_group]
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
@@ -35,8 +35,9 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/target.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/try_single_stroke/target.png', gamma=2.2)
 target = img.clone()
+
 
 # Visibility function
 def visibility_function(t):
@@ -108,44 +109,55 @@ controlPoints = torch.tensor([[120.0,  30.0], # base
                               [ 60.0, 218.0]    
 ])
 # Define the parameter values at which to split the curve
-zeros=[]
-
-for t in np.arange(0,1.1,0.1):
-     if visibility_function (t) ==0:
-          zeros.append(t)
-
-tValues = zeros
-segments = (split_bezier(controlPoints, tValues))
 
 
-i=0
-even_segments=[]
-for segment in segments:
-    i+=1
-    if i % 2 ==0:
-        even_segments.extend([segment])
-    else:
-        continue
+def split_separate_path(controlPoints):
+    zeros=[]
+    even_segments= []
+    #Finding the zeros
+    for t in np.arange(0,1.1,0.1):
+         if visibility_function (t) ==0:
+              zeros.append(t)
+    tValues = zeros
+    
+    #Splitting the curve
+    segments = (split_bezier(controlPoints, tValues))
 
-new_segments= even_segments
-
-
-shapes = []
-shape_groups =[]
-#Updated segments for rendering
-i = 0
-for segment in new_segments:
-    point = segment
-    path = pydiffvg.Path(num_control_points = num_control_points,
-                        points = point,
-                        is_closed = False,
-                        stroke_width = torch.tensor(5.0))
-    shapes.extend([path])
-    path_group= pydiffvg.ShapeGroup(shape_ids = torch.tensor([i]),
+    #Finding the even segment
+    i=0
+    for segment in segments:
+     i+=1
+     if i % 2 ==0:
+            even_segments.extend([segment])
+     else:
+            continue
+    
+    shapes = []
+    shape_groups =[]
+    #Updated segments for rendering
+    i = 0
+    for segment in even_segments:
+        points = segment
+        path = pydiffvg.Path(num_control_points = num_control_points,
+                            points = points,
+                            is_closed = False,
+                            stroke_width = torch.tensor(5.0))
+        shapes.extend([path])
+        path_group= pydiffvg.ShapeGroup(shape_ids = torch.tensor([i]),
                                  fill_color = torch.tensor([0.0, 0.0, 0.0, 0.0]),
                                  stroke_color = torch.tensor([0.4, 0.7, 0.5, 0.5]))
-    shape_groups.extend([path_group])
-    i+=1
+        shape_groups.extend([path_group])
+        i+=1
+    return shapes, shape_groups
+
+
+controlPoints = torch.tensor([[120.0,  30.0], # base
+                              [150.0,  60.0], # control point
+                              [ 90.0, 198.0], # control point
+                              [ 60.0, 218.0]    
+])
+
+[shapes,shape_groups] = split_separate_path(controlPoints)    
 
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
@@ -160,7 +172,7 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even6.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/try_single_stroke/segments_with_even5.png', gamma=2.2)
 segment = img.clone()
 
 
@@ -175,8 +187,11 @@ points_n = torch.tensor([[100.0/256.0,  40.0/256.0], # base
 stroke_color = torch.tensor([0.4, 0.7, 0.5, 0.5], requires_grad=True)
 stroke_width_n = torch.tensor(10.0 / 100.0, requires_grad=True)
 path.points = points_n * 256
+[shapes, shape_groups]= split_separate_path(path.points)
 path.stroke_width = stroke_width_n * 100
 path_group.stroke_color = stroke_color
+
+
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
 img = render(256, # width
@@ -186,8 +201,7 @@ img = render(256, # width
              1,   # seed
              None, # background_image
              *scene_args)
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/init.png', gamma=2.2)
-
+pydiffvg.imwrite(img.cpu(), 'results/try_single_stroke/init.png', gamma=2.2)
 # Optimize
 optimizer = torch.optim.Adam([points_n, stroke_color, stroke_width_n], lr=1e-2)
 # Run 200 Adam iterations.
@@ -196,6 +210,7 @@ for t in range(200):
     optimizer.zero_grad()
     # Forward pass: render the image.
     path.points = points_n * 256
+    [shapes, shape_groups]= split_separate_path(path.points)
     path.stroke_width = stroke_width_n * 100
     path_group.stroke_color = stroke_color
     scene_args = pydiffvg.RenderFunction.serialize_scene(\
@@ -208,7 +223,7 @@ for t in range(200):
                  None, # background_image
                  *scene_args)
     # Save the intermediate render.
-    pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/iter_{}.png'.format(t), gamma=2.2)
+    pydiffvg.imwrite(img.cpu(), 'results/try_single_stroke/iter_{}.png'.format(t), gamma=2.2)
     # Compute the loss function. Here it is L2.
     loss = (img - target).pow(2).sum()
     print('loss:', loss.item())
@@ -229,6 +244,7 @@ for t in range(200):
 
 # Render the final result.
 path.points = points_n * 256
+[shapes, shape_groups]= split_separate_path(path.points)
 path.stroke_width = stroke_width_n * 100
 path_group.stroke_color = stroke_color
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
@@ -241,11 +257,10 @@ img = render(256,   # width
              None, # background_image
              *scene_args)
 # Save the images and differences.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/final.png')
+pydiffvg.imwrite(img.cpu(), 'results/try_single_stroke/final.png')
 
 # Convert the intermediate renderings to a video.
 from subprocess import call
 call(["ffmpeg", "-framerate", "24", "-i",
-    "results/new_single_stroke/iter_%d.png", "-vb", "20M",
-    "results/new_single_stroke/out.mp4"])
-
+    "results/try_single_stroke/iter_%d.png", "-vb", "20M",
+    "results/try_single_stroke/out.mp4"])
