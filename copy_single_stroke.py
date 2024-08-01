@@ -52,13 +52,13 @@ def visibility_function(t):
 # Split Bezier curve at the zeros of the visibility function
 def split_bezier_at_T(control_points,t):
     """
-    split_bezier splits a Bézier curve at multiple parameter values.
+    split_bezier_at_T splits a Bézier curve into two segments at parameter t.
     Inputs:
       - controlPoints: An n x 2 matrix where each row represents a control point.
       - t: A vector of parameter values at which to split the curve.
     Outputs:
       - left: Control points of the left segment.
-      - right: Control points of right segment.
+      - right: Control points of the right segment.
     """
     n = control_points.shape[0] # Number of control points
     left = torch.zeros(n, 2) # Initialize left segment
