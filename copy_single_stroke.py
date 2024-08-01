@@ -35,22 +35,52 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/single_stroke/target.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/target.png', gamma=2.2)
 target = img.clone()
 
 # Visibility function
 def visibility_function(t):
     mod_t = t % 0.2
+    mod_t = round(mod_t, 2)
     if mod_t < 0.1:
         return 1 - 10 * mod_t
-    else:
+    elif mod_t== 0.1:
         return 0
+    else:
+        return -1
 
 # Predefined zeros of the visibility function
-zeros = [0.1, 0.3, 0.5, 0.7, 0.9]
+zeros = [0.1,0.3, 0.5, 0.7, 0.9]
+
 
 # Split Bezier curve at the zeros of the visibility function
-def split_bezier(control_points, t_values):
+def split_bezier_at_T(control_points,t):
+    """
+    split_bezier splits a Bézier curve at multiple parameter values.
+    Inputs:
+      - controlPoints: An n x 2 matrix where each row represents a control point.
+      - t: A vector of parameter values at which to split the curve.
+    Outputs:
+      - left: Control points of the left segment.
+      - right: Control points of right segment.
+    """
+    n = control_points.shape[0] # Number of control points
+    left = torch.zeros(n, 2) # Initialize left segment
+    right = torch.zeros(n, 2) # Initialize right segment
+    
+    points=control_points.clone()
+
+    for r in range(n):
+         left[r, :] = points[0, :]
+         for i in range(n - r-1):
+                points[i, :] = (1 - t) * points[i, :] + t * points[i + 1, :] #Interpolation
+         right[r, :] = points[n-r-1, :] # The last point of current segment
+
+    right= torch.flipud(right)
+
+    return [left,right]
+
+def split_bezier(control_points, tValues):
     """
     split_bezier splits a Bézier curve at multiple parameter values.
     Inputs:
@@ -59,80 +89,64 @@ def split_bezier(control_points, t_values):
     Outputs:
       - segments: A list containing the control points of the resulting curve segments.
     """
-    
     # Sort the parameter values to ensure correct sequential splitting
-    t_values = np.sort(t_values)
-    
+    tValues = np.sort(tValues)
     # Initialize a list to hold the control points of the split segments
     segments = []
-    remaining_points = control_points.copy()
+    remaining_points = torch.clone(control_points)
+    for t in tValues:
+         # Split the curve at t
+         [left, right] = split_bezier_at_T(remaining_points, t)
     
-    for t in t_values:
-        # Initialize matrices for left and right segments
-        left = np.zeros_like(remaining_points)
-        right = np.zeros_like(remaining_points)
-        
-        # Initialize points for de Casteljau's algorithm
-        points = remaining_points.copy()
-        n = points.shape[0]
-        
-        for r in range(n - 1):
-            left[r, :] = points[0, :]
-            for i in range(n - r):
-                points[i, :] = (1 - t) * points[i, :] + t * points[i + 1, :]
-        
-        left[n - 1, :] = points[0, :]
-        right[0:n - 1, :] = points[1:n, :]
-        right[n - 1, :] = points[n - 1, :]
-        
-        # Store the left segment and update the remaining points
-        segments.append(left) 
-        remaining_points = right
-    
-    # Add the final segment
+        # Store the left segment
+         segments.append(left)  
+         remaining_points= right
     segments.append(remaining_points)
-    
+
     return segments
-# Apply the visibility function to the path points
-#while t =! 0:
-# for t in visibility_function(t):
-    #if visibility_function(t) != -1:
-        #continue
-    #else:
-        #break
-      
-# Update the path with visible points and render (need to figure out new points for the following )
-points_one = torch.tensor([[120.0,  30.0], # base
-                       [150.0,  60.0], # control point
-                       [ 90.0, 198.0], # control point
-                       [ 60.0, 218.0]]) # base
-path_one = pydiffvg.Path(num_control_points = new_num_control_points,
-                     points = points,
+controlPoints = torch.tensor([[120.0,  30.0], # base
+                              [150.0,  60.0], # control point
+                              [ 90.0, 198.0], # control point
+                              [ 60.0, 218.0]    
+])
+
+
+# Define the parameter values at which to split the curve
+tValues = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+segments = (split_bezier(controlPoints, tValues))
+i=0
+split_segments=[]
+for segment in segments:
+    i+=1
+    if i % 2 ==0:
+         pass
+    else:
+        split_segments.extend([segment])
+
+
+new_segments= split_segments
+print(new_segments)
+
+#Updated segments for rendering
+
+shapes = []
+shape_groups = []
+
+for segment in new_segments:
+     i = 0
+     point = segment
+     path = pydiffvg.Path(num_control_points = num_control_points,
+                     points = point,
                      is_closed = False,
                      stroke_width = torch.tensor(5.0))
-
-points_two = torch.tensor([[ 90.0, 198.0], # base
-                       [150.0,  60.0], # control point
-                       [ 60.0, 218.0]]) # base
-path_two = pydiffvg.Path(num_control_points = new_num_control_points,
-                     points = test_points,
-                     is_closed = False,
-                     stroke_width = torch.tensor(5.0))
-
-shapes = [path_one]
-shapes.extend([path_two])
-path_group_one = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
+     shapes.extend([path])
+     path_group= pydiffvg.ShapeGroup(shape_ids = torch.tensor([i]),
                                  fill_color = torch.tensor([0.0, 0.0, 0.0, 0.0]),
                                  stroke_color = torch.tensor([0.6, 0.3, 0.6, 0.8]))
-path_group_two = pydiffvg.ShapeGroup(shape_ids = torch.tensor([1]),
-                                 fill_color = torch.tensor([0.0, 0.0, 0.0, 0.0]),
-                                 stroke_color = torch.tensor([0.4, 0.7, 0.5, 0.5]))
-shape_groups = [path_group_one]
-shape_groups.extend([path_group_two]) 
-
+     shape_groups.extend([path_group])
+     i+=1
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
-
 
 
 render = pydiffvg.RenderFunction.apply
@@ -144,8 +158,10 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/single_stroke/split.png', gamma=2.2)
-split = img.clone()
+pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments7.png', gamma=2.2)
+segment = img.clone()
+
+
 
 
 
