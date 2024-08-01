@@ -107,16 +107,23 @@ controlPoints = torch.tensor([[120.0,  30.0], # base
                               [ 90.0, 198.0], # control point
                               [ 60.0, 218.0]    
 ])
+# Define the parameter values at which to split the curve
+zeros=[]
 
-tValues = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+for t in np.arange(0,1.1,0.1):
+     if visibility_function (t) ==0:
+          zeros.append(t)
 
+tValues = zeros
 segments = (split_bezier(controlPoints, tValues))
+
+
 i=0
-even_segments=[]
+split_segments=[]
 for segment in segments:
     i+=1
     if i % 2 ==0:
-        even_segments.extend([segment])
+        split_segments.extend([segment])
     else:
         continue
 
@@ -154,7 +161,7 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even_to_1.png.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even_png', gamma=2.2)
 segment = img.clone()
 
 
