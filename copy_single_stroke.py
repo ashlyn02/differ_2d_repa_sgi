@@ -112,16 +112,15 @@ tValues = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
 
 segments = (split_bezier(controlPoints, tValues))
 i=0
-split_segments=[]
+even_segments=[]
 for segment in segments:
     i+=1
     if i % 2 ==0:
-         pass
+        even_segments.extend([segment])
     else:
-        split_segments.extend([segment])
+        continue
 
-
-new_segments= split_segments
+new_segments= even_segments
 print(new_segments)
 
 #Updated segments for rendering
@@ -155,7 +154,7 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments7.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even_to_1.png.png', gamma=2.2)
 segment = img.clone()
 
 
