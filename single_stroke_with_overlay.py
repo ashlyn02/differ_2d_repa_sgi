@@ -118,7 +118,6 @@ for t in np.arange(0,1.1,0.1):
 tValues = zeros
 segments = (split_bezier(controlPoints, tValues))
 
-
 i=0
 even_segments=[]
 for segment in segments:
@@ -132,22 +131,20 @@ new_segments= even_segments
 
 
 #Updated segments for rendering
-
-
-
+i = 1
 for segment in new_segments:
-     i = 1
-     point = segment
-     path = pydiffvg.Path(num_control_points = num_control_points,
-                     points = point,
-                     is_closed = False,
-                     stroke_width = torch.tensor(5.0))
-     shapes.extend([path])
-     path_group= pydiffvg.ShapeGroup(shape_ids = torch.tensor([i]),
+    point = segment
+    path = pydiffvg.Path(num_control_points = num_control_points,
+                        points = point,
+                        is_closed = False,
+                        stroke_width = torch.tensor(5.0))
+    shapes.extend([path])
+    path_group= pydiffvg.ShapeGroup(shape_ids = torch.tensor([i]),
                                  fill_color = torch.tensor([0.0, 0.0, 0.0, 0.0]),
                                  stroke_color = torch.tensor([0.4, 0.7, 0.5, 0.5]))
-     shape_groups.extend([path_group])
-     i+=1
+    shape_groups.extend([path_group])
+    i+=1
+
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
 
@@ -161,5 +158,5 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even_target.png', gamma=2.2)
+pydiffvg.imwrite(img.cpu(), 'results/new_single_stroke/segments_with_even_target_overlay.png', gamma=2.2)
 segment = img.clone()
