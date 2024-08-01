@@ -49,10 +49,6 @@ def visibility_function(t):
     else:
         return -1
 
-# Predefined zeros of the visibility function
-zeros = [0.1,0.3, 0.5, 0.7, 0.9]
-
-
 # Split Bezier curve at the zeros of the visibility function
 def split_bezier_at_T(control_points,t):
     """
@@ -104,15 +100,16 @@ def split_bezier(control_points, tValues):
     segments.append(remaining_points)
 
     return segments
+
+# Define the parameter values at which to split the curve
 controlPoints = torch.tensor([[120.0,  30.0], # base
                               [150.0,  60.0], # control point
                               [ 90.0, 198.0], # control point
                               [ 60.0, 218.0]    
 ])
 
-
-# Define the parameter values at which to split the curve
 tValues = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+
 segments = (split_bezier(controlPoints, tValues))
 i=0
 split_segments=[]
