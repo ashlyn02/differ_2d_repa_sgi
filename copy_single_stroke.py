@@ -119,11 +119,11 @@ segments = (split_bezier(controlPoints, tValues))
 
 
 i=0
-split_segments=[]
+even_segments=[]
 for segment in segments:
     i+=1
     if i % 2 ==0:
-        split_segments.extend([segment])
+        even_segments.extend([segment])
     else:
         continue
 
