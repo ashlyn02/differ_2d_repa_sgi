@@ -26,18 +26,6 @@ scene_args = pydiffvg.RenderFunction.serialize_scene(\
 
 
 
-render = pydiffvg.RenderFunction.apply
-img = render(256, # width
-             256, # height
-             2,   # num_samples_x
-             2,   # num_samples_y
-             0,   # seed
-             None, # background_image
-             *scene_args)
-# The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/vis_single_stroke/target.png', gamma=2.2)
-target = img.clone()
-
 
 # Visibility function
 def visibility_function(t):
@@ -98,15 +86,6 @@ def split_bezier(control_points, tValues):
 
     return segments
 
-# Define the parameter values at which to split the curve
-controlPoints = torch.tensor([[120.0,  30.0], # base
-                              [150.0,  60.0], # control point
-                              [ 90.0, 198.0], # control point
-                              [ 60.0, 218.0]    
-])
-# Define the parameter values at which to split the curve
-
-
 def split_separate_path(controlPoints):
     zeros=[]
     even_segments= []
@@ -115,9 +94,7 @@ def split_separate_path(controlPoints):
          if visibility_function (t) ==0:
               zeros.append(t)
     tValues = zeros
-    
-    for z in tValues:
-        print(tValues)
+
     #Splitting the curve
     segments = (split_bezier(controlPoints, tValues))
 
@@ -160,7 +137,6 @@ controlPoints = torch.tensor([[120.0,  30.0], # base
 scene_args = pydiffvg.RenderFunction.serialize_scene(\
     canvas_width, canvas_height, shapes, shape_groups)
 
-
 render = pydiffvg.RenderFunction.apply
 img = render(256, # width
              256, # height
@@ -170,8 +146,8 @@ img = render(256, # width
              None, # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
-pydiffvg.imwrite(img.cpu(), 'results/vis_single_stroke/segments_with_even15.png', gamma=2.2)
-segment = img.clone()
+pydiffvg.imwrite(img.cpu(), 'results/vis_single_stroke/target.png', gamma=2.2)
+target = img.clone()
 
 
 
@@ -223,7 +199,7 @@ for t in range(200):
     # Save the intermediate render.
     pydiffvg.imwrite(img.cpu(), 'results/vis_single_stroke/iter_{}.png'.format(t), gamma=2.2)
     # Compute the loss function. Here it is L2.
-    loss = (img - segment).pow(2).sum()
+    loss = (img - target).pow(2).sum()
     print('loss:', loss.item())
 
     # Backpropagate the gradients.
